@@ -1,0 +1,123 @@
+version: '3.7'
+services:
+
+  mongodb:
+    image: mongo:latest
+    container_name: "mongodb"
+    hostname: mongodb
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/data/logs
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - 27017:27017
+    command: mongod # --logpath=/data/logs/log.txt
+    networks:
+      - flight-application-network
+  
+  flight-eureka-server:
+    #image: amikchak/wpksoft:flight-eureka-server-0.3
+    build:
+      context: flight-eureka-server
+      dockerfile: Dockerfile
+    container_name: "flighteurekaserver"
+    hostname: flighteurekaserver
+    ports:
+      - "7100:7100"
+    restart: always
+    networks:
+      - flight-application-network
+
+  flight-proxy-service:
+    #image: amikchak/wpksoft:flight-proxy-service-0.3
+    build:
+      context: flight-proxy-service
+      dockerfile: Dockerfile
+    container_name: "flight-proxy-service"
+    hostname: flight-proxy-service
+    ports:
+      - "7102:7102"
+    restart: always
+    depends_on:
+      - flight-eureka-server
+    networks:
+      - flight-application-network
+
+  flight-registration-service:
+    #image: amikchak/wpksoft:flight-registration-service-0.3
+    build:
+      context: flight-registration-service
+      dockerfile: Dockerfile
+    container_name: "flight-registration-service"
+    hostname: flight-registration-service
+    ports:
+      - "7104:7104"
+    restart: always
+    depends_on:
+      - mongodb
+      - flight-eureka-server
+      - flight-proxy-service
+    networks:
+      - flight-application-network
+
+  flight-search-service:
+    #image: amikchak/wpksoft:flight-search-service-0.3
+    build:
+      context: flight-search-service
+      dockerfile: Dockerfile
+    container_name: "flight-search-service"
+    hostname: flight-search-service
+    ports:
+      - "7105:7105"
+    restart: always
+    depends_on:
+      - mongodb
+      - flight-eureka-server
+      - flight-proxy-service
+    networks:
+      - flight-application-network
+  
+  flight-book-service:
+    #image: amikchak/wpksoft:flight-book-service-0.3
+    build:
+      context: flight-book-service
+      dockerfile: Dockerfile
+    container_name: "flight-book-service"
+    hostname: flight-book-service
+    ports:
+      - "7106:7106"
+    restart: always
+    depends_on:
+      - mongodb
+      - flight-eureka-server
+      - flight-proxy-service
+    networks:
+      - flight-application-network
+  
+  flight-login-service:
+    #image: amikchak/wpksoft:flight-login-service-0.3
+    build:
+      context: flight-login-service
+      dockerfile: Dockerfile
+    container_name: "flight-login-service"
+    hostname: flight-login-service
+    ports:
+      - "7103:7103"
+    restart: always
+    depends_on:
+      - mongodb
+      - flight-eureka-server
+      - flight-proxy-service
+      - flight-registration-service
+      - flight-search-service
+      - flight-book-service
+    networks:
+      - flight-application-network
+  
+volumes:
+    mongodata:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  flight-application-network:
